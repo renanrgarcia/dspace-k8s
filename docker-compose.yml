@@ -71,6 +71,34 @@ services:
       SPRING_PROFILES_ACTIVE: "docker"
     restart: unless-stopped
 
+  # DSpace Frontend - Angular UI
+  dspace-frontend:
+    build:
+      context: .
+      dockerfile: ./docker/dspace-frontend/Dockerfile
+      args:
+        DSPACE_UI_HOST: "localhost"
+        DSPACE_UI_PORT: "4000"
+        DSPACE_REST_HOST: "dspace-backend"
+        DSPACE_REST_PORT: "8080"
+        DSPACE_REST_NAMESPACE: "/server"
+        DSPACE_REST_SSL: "false"
+    container_name: dspace-frontend
+    ports:
+      - "4000:4000"
+    networks:
+      - dspace-network
+    depends_on:
+      - dspace-backend
+    environment:
+      DSPACE_UI_HOST: "localhost"
+      DSPACE_UI_PORT: "4000"
+      DSPACE_REST_HOST: "dspace-backend"
+      DSPACE_REST_PORT: "8080"
+      DSPACE_REST_NAMESPACE: "/server"
+      DSPACE_REST_SSL: "false"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   solr_data:

@@ -1,0 +1,58 @@
+# DSpace Angular Docker Configuration
+debug: false
+
+ui:
+  ssl: false
+  host: 0.0.0.0
+  port: 4000
+  nameSpace: /
+  rateLimiter:
+    windowMs: 60000
+    max: 500
+  useProxies: true
+
+rest:
+  ssl: false
+  host: dspace-backend
+  port: 8080
+  nameSpace: /server
+
+cache:
+  msToLive:
+    default: 900000
+    browse: 300000
+    search: 300000
+
+production: true
+defaultLanguage: en
+
+languages:
+  - code: en
+    label: English
+    active: true
+
+themes:
+  - name: dspace
+    enableTheming: true
+    headTags: []
+
+submission:
+  autosave:
+    metadata: []
+    timer: 0
+
+browseBy:
+  showThumbnails: true
+  types:
+    - id: title
+      metadataField: "dc.title"
+      sortField: "dc.title"
+    - id: author
+      metadataField: "dc.contributor.*"
+      sortField: "dc.contributor.author"
+    - id: subject
+      metadataField: "dc.subject.*"
+      sortField: "dc.subject"
+    - id: dateissued
+      metadataField: "dc.date.issued"
+      sortField: "dc.date.issued"

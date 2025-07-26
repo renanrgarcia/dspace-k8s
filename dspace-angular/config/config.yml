@@ -1,5 +1,184 @@
+# DSpace Angular Frontend Configuration
+# This configuration is optimized for Docker environment
+
+# NOTE: will log all redux actions and transfers in console
+debug: false
+
+# Angular User Interface settings
+# NOTE: these settings define where Node.js will start your UI application
+ui:
+  ssl: false
+  host: 0.0.0.0 # Listen on all interfaces inside container
+  port: 4000
+  # NOTE: Space is capitalized because 'namespace' is a reserved string in TypeScript
+  nameSpace: /
+  # The rateLimiter settings limit each IP to a 'max' of 500 requests per 'windowMs' (1 minute).
+  rateLimiter:
+    windowMs: 60000 # 1 minute
+    max: 500 # limit each IP to 500 requests per windowMs
+  # Trust X-FORWARDED-* headers from proxies (default = true)
+  useProxies: true
+
+# Angular Server Side Rendering (SSR) settings
+ssr:
+  # Add additional SSR-related settings if needed
+  enabled: true
+
+# DSpace REST API backend settings
 rest:
-  ssl: true
-  host: sandbox.dspace.org
-  port: 443
+  ssl: false
+  host: dspace-backend
+  port: 8080
+  # NOTE: Space is capitalized because 'namespace' is a reserved string in TypeScript
   nameSpace: /server
+
+# Caching settings
+cache:
+  # NOTE: how long should objects be cached for by default
+  msToLive: {
+      default: 15 * 60 * 1000, # 15 minutes
+      browse: 5 * 60 * 1000, # 5 minutes for browse pages
+      search: 5 * 60 * 1000, # 5 minutes for search results
+    }
+
+# Authentication settings
+auth:
+  # Authentication UI settings
+  ui:
+    # the amount of time before the idle warning is shown
+    timeUntilIdle: 15 # minutes
+    # the amount of time the user has to react after the idle warning is shown before they are logged out.
+    idleGracePeriod: 3 # minutes
+
+# Item Config
+item:
+  # Show the item access status label in items lists
+  showAccessStatuses: false
+
+# Collection Page Config
+collection:
+  edit:
+    undoTimeout: 10000 # 10 seconds
+
+# Theme Config
+themes:
+  - name: dspace
+    # Specify which theme to use in production
+    # NOTE: The theme specified here will be used as the default theme.
+    headTags: []
+    # Whether or not to enable theming for this theme
+    enableTheming: true
+
+# Media Viewer Config
+mediaViewer:
+  image: true
+  video: true
+
+# Google Analytics tracking ID
+# gaTrackingId: 'YOUR_TRACKING_ID'
+
+# Default Language
+defaultLanguage: en
+
+# Languages. (Whenever a language is specified, a new option will appear in the language dropdown)
+languages:
+  - code: en
+    label: English
+    active: true
+  - code: de
+    label: Deutsch
+    active: false
+
+# Production
+production: true
+
+# The base URL of the REST API
+# Defaults to "/server" (which works for both relative and absolute URLs)
+# Can be overridden using environment variables
+restBaseUrl: "/server"
+
+# UI Base URL
+# Used for generating absolute URLs in the application
+# Can be overridden with environment variables
+uiBaseUrl: "http://localhost:4000"
+
+# Bundle Configurations
+bundles:
+  - name: ORIGINAL
+    metadata:
+      - "dc.title"
+      - "dc.description"
+
+# Browse-By Pages
+browseBy:
+  # Amount of top-level and second-level items to show by default
+  showThumbnails: true
+  # The metadata fields used for browsing. Whenever a field is specified,
+  # a new browse index will appear in the "Browse" dropdown.
+  types:
+    - id: title
+      metadataField: "dc.title"
+      sortField: "dc.title"
+    - id: author
+      metadataField: "dc.contributor.*"
+      sortField: "dc.contributor.author"
+    - id: subject
+      metadataField: "dc.subject.*"
+      sortField: "dc.subject"
+    - id: dateissued
+      metadataField: "dc.date.issued"
+      sortField: "dc.date.issued"
+
+# Search component settings
+search:
+  # Advanced search field configuration
+  advancedFilters:
+    enabled: true
+    # List of available filters for advanced search
+    filters:
+      - filter: "title"
+        label: "Title"
+        field: "dc.title"
+        operator: "contains"
+      - filter: "author"
+        label: "Author"
+        field: "dc.contributor.author"
+        operator: "authority"
+      - filter: "subject"
+        label: "Subject"
+        field: "dc.subject"
+        operator: "contains"
+      - filter: "dateIssued"
+        label: "Date issued"
+        field: "dc.date.issued"
+        operator: "equals"
+
+# Form settings
+form:
+  # NOTE: Map server-side validators to comparative Angular form validators
+  validatorMap:
+    required: "required"
+    regex: "pattern"
+
+# Notifications
+notifications:
+  rtl: false
+  position: ["top", "right"]
+  maxStack: 8
+  # NOTE: after how many seconds notification is closed automatically. If set to zero notifications are not closed automatically
+  timeOut: 5000 # 5 second
+  clickToClose: true
+
+# Submission settings
+submission:
+  # Whether or not to enable submission uploads
+  icons:
+    metadata:
+      "dc.type": "fa fa-tag"
+    authority:
+      "dc.contributor.author": "fa fa-user"
+  autosave:
+    # NOTE: which metadata trigger an autosave
+    metadata: []
+    # NOTE: every how many minutes submission is saved automatically
+    timer: 0
