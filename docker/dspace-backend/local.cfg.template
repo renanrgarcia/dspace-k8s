@@ -1,0 +1,98 @@
+##################################################################
+# DSpace local configuration for Docker environment
+# Generated automatically by Docker build
+##################################################################
+
+# REQUIRED: Installation directory
+dspace.dir = /dspace
+
+# REQUIRED: Database configuration (PostgreSQL)  
+db.driver = org.postgresql.Driver
+db.dialect = org.hibernate.dialect.PostgreSQLDialect
+db.url = jdbc:postgresql://dspace-db:5432/dspace
+db.username = dspace
+db.password = dspace
+
+# Database connection pool settings
+db.maxconnections = 30
+db.maxwait = 5000
+db.maxidle = 10
+db.statementpool = true
+
+# REQUIRED: Solr configuration
+solr.server = http://dspace-solr:8983/solr
+
+# REQUIRED: Server URLs (DSpace 9 backend)
+dspace.server.url = http://localhost:8080/server
+dspace.ui.url = http://localhost:4000
+
+# Repository information
+dspace.name = DSpace Docker Repository
+dspace.hostname = localhost
+dspace.baseUrl = http://localhost:8080
+
+# Administrator and feedback emails
+mail.admin = admin@dspace.org
+mail.from.address = dspace-noreply@localhost
+mail.feedback.recipient = admin@dspace.org
+feedback.recipient = admin@dspace.org
+alert.recipient = admin@dspace.org
+
+# Mail server configuration (development)
+mail.server.disabled = false
+mail.server = localhost
+mail.server.port = 25
+
+# Handle server configuration
+handle.canonical.prefix = http://localhost:8080/handle/
+handle.prefix = 123456789
+
+# Authentication settings
+authentication-password.domain.valid = localhost
+
+# CORS settings for Angular frontend
+cors.allowed-origins = http://localhost:4000,http://localhost:3000
+
+# REST API configuration
+rest.url = http://localhost:8080/server
+
+# Logging configuration
+loglevel.dspace = INFO
+loglevel.other = WARN
+log.init.config = ${dspace.dir}/config/log4j2.xml
+
+# Usage statistics
+usage-statistics.authorization.admin.usage = true
+
+# OAI configuration
+oai.solr.url = ${solr.server}/oai
+
+# File storage (assetstore)
+assetstore.dir = ${dspace.dir}/assetstore
+
+# Search configuration
+search.server = ${solr.server}
+
+# Thumbnail configuration
+thumbnail.maxwidth = 300
+thumbnail.maxheight = 300
+
+# Discovery configuration
+discovery.index.authority = true
+
+# Default language
+default.language = en_US
+
+# WebMVC UI configuration (DSpace 9)
+webmvc.user.registration = true
+webmvc.user.edit.metadata = true
+
+# Spring Boot configuration
+server.port = 8080
+server.servlet.context-path = /server
+
+# Enable Mirage 2 theme
+xmlui.mirage2.enabled = true
+
+# Statistics configuration
+usage-statistics.dbfile = ${dspace.dir}/log/dspace.log

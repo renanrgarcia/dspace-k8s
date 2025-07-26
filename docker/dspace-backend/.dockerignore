@@ -1,0 +1,24 @@
+# Exclude old shell scripts and Dockerfiles (but keep our auxiliary files)
+setup-dspace.sh
+start-dspace.sh
+Dockerfile.builder
+Dockerfile.runtime
+
+# Exclude documentation files
+*.md
+*.txt
+
+# Exclude temporary files
+*.tmp
+*.log
+*.bak
+
+# Exclude version control
+.git/
+.gitignore
+
+# Keep these auxiliary files needed for build:
+# - init.sh
+# - local.cfg.template
+
+# Don't exclude dspace-source - we need it for the build

@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database with pgcrypto extension
+  dspace-db:
+    image: postgres:17
+    container_name: dspace-postgres
+    environment:
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: dspace
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql
+    networks:
+      - dspace-network
+
+  # Apache Solr 9.x for search indexing
+  dspace-solr:
+    image: solr:9.8
+    container_name: dspace-solr
+    environment:
+      SOLR_OPTS: "-Dsolr.config.lib.enabled=true"
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr_data:/var/solr
+      - ./docker/solr/cores:/opt/solr/server/solr/configsets/dspace:ro
+    command: solr-foreground
+    networks:
+      - dspace-network
+
+  # DSpace Backend - Single container that builds and runs DSpace
+  dspace-backend:
+    build:
+      context: ./docker/dspace-backend
+      dockerfile: Dockerfile
+      args:
+        DSPACE_VERSION: "dspace-9.0"
+        POSTGRES_HOST: "dspace-db"
+        POSTGRES_DB: "dspace"
+        POSTGRES_USER: "dspace"
+        POSTGRES_PASSWORD: "dspace"
+        SOLR_HOST: "dspace-solr"
+        SOLR_PORT: "8983"
+        ADMIN_EMAIL: "admin@dspace.org"
+        ADMIN_PASSWORD: "admin"
+    container_name: dspace-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - dspace_install:/dspace
+    networks:
+      - dspace-network
+    depends_on:
+      - dspace-db
+      - dspace-solr
+    environment:
+      POSTGRES_HOST: "dspace-db"
+      POSTGRES_DB: "dspace"
+      POSTGRES_USER: "dspace"
+      POSTGRES_PASSWORD: "dspace"
+      SOLR_HOST: "dspace-solr"
+      SOLR_PORT: "8983"
+      ADMIN_EMAIL: "admin@dspace.org"
+      ADMIN_PASSWORD: "admin"
+      JAVA_OPTS: "-Xmx2g -Xms1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+      SPRING_PROFILES_ACTIVE: "docker"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  solr_data:
+  dspace_install:
+
+networks:
+  dspace-network:
+    driver: bridge
