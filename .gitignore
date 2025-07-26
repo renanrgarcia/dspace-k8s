@@ -1,0 +1,37 @@
+# DSpace specific
+dspace-installation/
+dspace-build/
+.dspace/
+
+# Docker volumes
+postgres-data/
+solr-data/
+dspace-data/
+
+# Maven
+target/
+.m2/repository/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Environment files
+.env.local
+.env.*.local
+.env
