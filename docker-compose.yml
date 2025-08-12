@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: dspace
       POSTGRES_USER: dspace
       POSTGRES_PASSWORD: dspace
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5432:5432"
     volumes:
@@ -17,6 +17,7 @@ services:
       - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql
     networks:
       - dspace-network
+    restart: unless-stopped
 
   # Apache Solr 9.x for search indexing
   dspace-solr:
@@ -29,35 +30,78 @@ services:
     volumes:
       - solr_data:/var/solr
       - ./docker/solr/cores:/opt/solr/server/solr/configsets/dspace:ro
-    command: solr-foreground
+    command: |
+      bash -c "
+        solr-foreground &
+        sleep 30
+        # Create DSpace cores if they don't exist
+        solr create_core -c search -d /opt/solr/server/solr/configsets/dspace || true
+        solr create_core -c statistics -d /opt/solr/server/solr/configsets/dspace || true
+        solr create_core -c authority -d /opt/solr/server/solr/configsets/dspace || true
+        wait
+      "
     networks:
       - dspace-network
+    restart: unless-stopped
 
-  # DSpace Backend - Single container that builds and runs DSpace
+  # DSpace Backend - Development setup with local source mounted
   dspace-backend:
-    build:
-      context: ./docker/dspace-backend
-      dockerfile: Dockerfile
-      args:
-        DSPACE_VERSION: "dspace-9.0"
-        POSTGRES_HOST: "dspace-db"
-        POSTGRES_DB: "dspace"
-        POSTGRES_USER: "dspace"
-        POSTGRES_PASSWORD: "dspace"
-        SOLR_HOST: "dspace-solr"
-        SOLR_PORT: "8983"
-        ADMIN_EMAIL: "admin@dspace.org"
-        ADMIN_PASSWORD: "admin"
+    image: eclipse-temurin:17-jre-jammy
     container_name: dspace-backend
+    working_dir: /dspace-source
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 1G
+    command: |
+      bash -c "
+        echo '🔧 Setting up DSpace development environment...'
+
+        # Install required packages
+        apt-get update && apt-get install -y maven postgresql-client curl netcat-openbsd
+
+        # Wait for dependencies
+        echo '⏳ Waiting for PostgreSQL...'
+        while ! nc -z dspace-db 5432; do sleep 2; done
+        echo '⏳ Waiting for Solr...'
+        while ! nc -z dspace-solr 8983; do sleep 2; done
+
+        echo '🚀 Dependencies ready! Building DSpace...'
+
+        # Build DSpace (optimized for memory and speed)
+        export MAVEN_OPTS="-Xmx1g -Xms512m"
+        mvn clean package -DskipTests -Dcheckstyle.skip=true -Denforcer.skip=true -Dmaven.javadoc.skip=true -Dxml.skip=true -T 1C
+
+        echo '📦 Installing DSpace...'
+        cd dspace/target/dspace-installer
+        ant fresh_install
+
+        echo '🗄️ Initializing database...'
+        /dspace/bin/dspace database migrate
+
+        echo '👤 Creating administrator...'
+        /dspace/bin/dspace create-administrator -e admin@dspace.org -f Admin -l User -p admin -c en
+
+        echo '🌐 Starting DSpace server...'
+        cd /dspace/webapps
+        java -jar server-boot.jar
+      "
     ports:
       - "8080:8080"
     volumes:
       - dspace_install:/dspace
+      - dspace_logs:/dspace/log
+      - ./dspace-source:/dspace-source  # Mount local source for development
+
     networks:
       - dspace-network
     depends_on:
-      - dspace-db
-      - dspace-solr
+      dspace-db:
+        condition: service_started
+      dspace-solr:
+        condition: service_started
     environment:
       POSTGRES_HOST: "dspace-db"
       POSTGRES_DB: "dspace"
@@ -71,38 +115,56 @@ services:
       SPRING_PROFILES_ACTIVE: "docker"
     restart: unless-stopped
 
-  # DSpace Frontend - Angular UI
+  # DSpace Frontend - Development setup with local Angular source
   dspace-frontend:
-    build:
-      context: .
-      dockerfile: ./docker/dspace-frontend/Dockerfile
-      args:
-        DSPACE_UI_HOST: "localhost"
-        DSPACE_UI_PORT: "4000"
-        DSPACE_REST_HOST: "dspace-backend"
-        DSPACE_REST_PORT: "8080"
-        DSPACE_REST_NAMESPACE: "/server"
-        DSPACE_REST_SSL: "false"
+    image: node:18-alpine
     container_name: dspace-frontend
+    working_dir: /app
+    command: |
+      sh -c "
+        echo '🔧 Setting up DSpace Angular development environment...'
+
+        # Install system dependencies
+        apk add --no-cache git python3 make g++ curl netcat-openbsd
+
+        # Wait for backend
+        echo '⏳ Waiting for DSpace backend...'
+        while ! nc -z dspace-backend 8080; do sleep 5; done
+
+        echo '📦 Installing dependencies...'
+        npm ci
+
+        echo '🚀 Starting Angular development server...'
+        npm run serve:ssr
+      "
     ports:
       - "4000:4000"
     networks:
       - dspace-network
+    volumes:
+      - ./dspace-angular:/app  # Mount local Angular source for development
     depends_on:
       - dspace-backend
     environment:
-      DSPACE_UI_HOST: "localhost"
+      DSPACE_UI_HOST: "0.0.0.0"
       DSPACE_UI_PORT: "4000"
       DSPACE_REST_HOST: "dspace-backend"
       DSPACE_REST_PORT: "8080"
       DSPACE_REST_NAMESPACE: "/server"
       DSPACE_REST_SSL: "false"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data:
   solr_data:
   dspace_install:
+  dspace_logs:
 
 networks:
   dspace-network:

@@ -4,7 +4,7 @@ set -e
 echo "🚀 Starting DSpace 9 Backend"
 echo "============================"
 
-# Function to wait for service (simplified version)
+# Function to wait for service
 wait_for_service() {
     local service_name=$1
     local host=$2
@@ -35,14 +35,12 @@ if [ ! -f /dspace/.db_initialized ]; then
     /dspace/bin/dspace database migrate
     
     echo "👤 Creating administrator..."
-    /dspace/bin/dspace create-administrator << EOL
-$ADMIN_EMAIL
-$ADMIN_PASSWORD
-$ADMIN_PASSWORD
-DSpace
-Administrator
-y
-EOL
+    /dspace/bin/dspace create-administrator \
+        -e "$ADMIN_EMAIL" \
+        -f "DSpace" \
+        -l "Administrator" \
+        -p "$ADMIN_PASSWORD" \
+        -c "en" || echo "⚠️ Administrator may already exist"
     
     echo "🔍 Building search index..."
     /dspace/bin/dspace index-discovery -b
@@ -60,3 +58,5 @@ exec java $JAVA_OPTS \
     -Dlogging.config="/dspace/config/log4j2.xml" \
     -Dspring.profiles.active="$SPRING_PROFILES_ACTIVE" \
     -jar "/dspace/webapps/server-boot.jar"
+
+

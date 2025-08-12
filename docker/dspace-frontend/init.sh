@@ -120,5 +120,39 @@ echo "🌐 Starting DSpace Frontend server..."
 echo "Available at: http://$DSPACE_UI_HOST:$DSPACE_UI_PORT"
 echo ""
 
-# Start the DSpace Angular SSR server
-exec npm run serve:ssr
+# Start the DSpace Angular server
+# For now, we'll use a simple HTTP server to serve the built files
+echo "Starting DSpace Angular application..."
+
+# Check if we have SSR build, otherwise serve static files
+if [ -f "dist/server/main.js" ]; then
+    echo "Found SSR build, starting SSR server..."
+    exec node dist/server/main.js
+else
+    echo "No SSR build found, serving static files with Node.js..."
+    # Create a simple Node.js server to serve static files
+    cat > server.js << 'EOF'
+const express = require('express');
+const path = require('path');
+const app = express();
+const port = process.env.DSPACE_UI_PORT || 4000;
+
+// Serve static files from the dist/browser directory
+app.use(express.static(path.join(__dirname, 'dist/browser')));
+
+// Handle Angular routing - send all requests to index.html
+app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist/browser/index.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('healthy');
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`DSpace Angular app listening at http://0.0.0.0:${port}`);
+});
+EOF
+    exec node server.js
+fi
