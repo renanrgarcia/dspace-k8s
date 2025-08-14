@@ -60,7 +60,7 @@ services:
         echo '🔧 Setting up DSpace development environment...'
 
         # Install required packages
-        apt-get update && apt-get install -y maven postgresql-client curl netcat-openbsd
+        apt-get update && apt-get install -y maven ant postgresql-client curl netcat-openbsd
 
         # Wait for dependencies
         echo '⏳ Waiting for PostgreSQL...'
@@ -93,7 +93,7 @@ services:
     volumes:
       - dspace_install:/dspace
       - dspace_logs:/dspace/log
-      - ./dspace-source:/dspace-source  # Mount local source for development
+      - ./dspace-source:/dspace-source # Mount local source for development
 
     networks:
       - dspace-network
@@ -142,7 +142,7 @@ services:
     networks:
       - dspace-network
     volumes:
-      - ./dspace-angular:/app  # Mount local Angular source for development
+      - ./dspace-angular:/app # Mount local Angular source for development
     depends_on:
       - dspace-backend
     environment:
