@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # PostgreSQL Database with pgcrypto extension
   dspace-db:
@@ -14,7 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql
+      - ./docker/postgres/init-dspace.sql:/docker-entrypoint-initdb.d/02-init-dspace.sql
     networks:
       - dspace-network
     restart: unless-stopped
@@ -29,72 +28,33 @@ services:
       - "8983:8983"
     volumes:
       - solr_data:/var/solr
-      - ./docker/solr/cores:/opt/solr/server/solr/configsets/dspace:ro
+      - ./docker/solr/configsets:/opt/solr/server/solr/configsets:ro
     command: |
       bash -c "
         solr-foreground &
         sleep 30
-        # Create DSpace cores if they don't exist
-        solr create_core -c search -d /opt/solr/server/solr/configsets/dspace || true
-        solr create_core -c statistics -d /opt/solr/server/solr/configsets/dspace || true
-        solr create_core -c authority -d /opt/solr/server/solr/configsets/dspace || true
+        # Create DSpace cores using our custom configurations
+        solr create_core -c search -d /opt/solr/server/solr/configsets/search || true
+        solr create_core -c statistics -d /opt/solr/server/solr/configsets/statistics || true
+        solr create_core -c authority -d /opt/solr/server/solr/configsets/authority || true
         wait
       "
     networks:
       - dspace-network
     restart: unless-stopped
 
-  # DSpace Backend - Development setup with local source mounted
+  # DSpace Backend - Built from Dockerfile
   dspace-backend:
-    image: eclipse-temurin:17-jre-jammy
+    build:
+      context: ./dspace-source
+      dockerfile: ../docker/dspace-backend/Dockerfile
     container_name: dspace-backend
-    working_dir: /dspace-source
-    deploy:
-      resources:
-        limits:
-          memory: 3G
-        reservations:
-          memory: 1G
-    command: |
-      bash -c "
-        echo '🔧 Setting up DSpace development environment...'
-
-        # Install required packages
-        apt-get update && apt-get install -y maven ant postgresql-client curl netcat-openbsd
-
-        # Wait for dependencies
-        echo '⏳ Waiting for PostgreSQL...'
-        while ! nc -z dspace-db 5432; do sleep 2; done
-        echo '⏳ Waiting for Solr...'
-        while ! nc -z dspace-solr 8983; do sleep 2; done
-
-        echo '🚀 Dependencies ready! Building DSpace...'
-
-        # Build DSpace (optimized for memory and speed)
-        export MAVEN_OPTS="-Xmx1g -Xms512m"
-        mvn clean package -DskipTests -Dcheckstyle.skip=true -Denforcer.skip=true -Dmaven.javadoc.skip=true -Dxml.skip=true -T 1C
-
-        echo '📦 Installing DSpace...'
-        cd dspace/target/dspace-installer
-        ant fresh_install
-
-        echo '🗄️ Initializing database...'
-        /dspace/bin/dspace database migrate
-
-        echo '👤 Creating administrator...'
-        /dspace/bin/dspace create-administrator -e admin@dspace.org -f Admin -l User -p admin -c en
-
-        echo '🌐 Starting DSpace server...'
-        cd /dspace/webapps
-        java -jar server-boot.jar
-      "
     ports:
       - "8080:8080"
     volumes:
       - dspace_install:/dspace
       - dspace_logs:/dspace/log
       - ./dspace-source:/dspace-source # Mount local source for development
-
     networks:
       - dspace-network
     depends_on:

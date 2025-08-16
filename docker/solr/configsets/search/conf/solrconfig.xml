@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+  <!-- DSpace Search Core Configuration -->
+
+  <!-- Solr Configuration for DSpace Search -->
+  <luceneMatchVersion>9.8.0</luceneMatchVersion>
+
+  <!-- Data Directory -->
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <!-- Directory Factory -->
+  <directoryFactory
+    name="DirectoryFactory"
+    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"
+  />
+
+  <!-- Codec Factory -->
+  <codecFactory class="solr.SchemaCodecFactory" />
+
+  <!-- Schema Factory -->
+  <schemaFactory class="ClassicIndexSchemaFactory" />
+
+  <!-- Request Handlers -->
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+      <str name="df">text</str>
+    </lst>
+    <arr name="last-components">
+      <str>spellcheck</str>
+      <str>suggest</str>
+      <str>highlight</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler name="/query" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+    <lst name="defaults">
+      <str name="omitHeader">true</str>
+    </lst>
+  </requestHandler>
+
+  <!-- Update Request Handler -->
+  <requestHandler
+    name="/update"
+    class="solr.UpdateRequestHandler"
+    startup="lazy"
+  />
+
+  <!-- Analysis Request Handler -->
+  <requestHandler
+    name="/analysis/field"
+    startup="lazy"
+    class="solr.FieldAnalysisRequestHandler"
+  />
+
+  <!-- Document Analysis Request Handler -->
+  <requestHandler
+    name="/analysis/document"
+    startup="lazy"
+    class="solr.DocumentAnalysisRequestHandler"
+  />
+
+  <!-- Spell Check Component -->
+  <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
+    <str name="queryAnalyzerFieldType">textSpell</str>
+    <lst name="spellchecker">
+      <str name="name">default</str>
+      <str name="field">text</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      <str name="distanceMeasure">internal</str>
+      <float name="accuracy">0.5</float>
+      <int name="maxEdits">2</int>
+      <int name="minPrefix">1</int>
+      <int name="maxInspections">5</int>
+      <float name="minQueryLength">4</float>
+      <float name="maxQueryFrequency">0.01</float>
+    </lst>
+  </searchComponent>
+
+  <!-- Suggest Component -->
+  <searchComponent name="suggest" class="solr.SuggestComponent">
+    <lst name="suggester">
+      <str name="name">mySuggester</str>
+      <str name="lookupImpl">AnalyzingLookupFactory</str>
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>
+      <str name="field">suggest</str>
+      <str name="weightField">suggest_weight</str>
+      <str name="suggestAnalyzerFieldType">textSuggest</str>
+    </lst>
+  </searchComponent>
+
+  <!-- Highlight Component -->
+  <searchComponent name="highlight" class="solr.HighlightComponent">
+    <highlighting>
+      <fragmenter
+        name="gap"
+        class="solr.highlight.GapFragmenter"
+        default="true"
+      >
+        <lst name="defaults">
+          <int name="hl.fragsize">100</int>
+        </lst>
+      </fragmenter>
+      <fragmenter name="regex" class="solr.highlight.RegexFragmenter">
+        <lst name="defaults">
+          <float name="hl.regex.slop">0.6</float>
+          <str name="hl.regex.pattern">[-\w ,/\n\&quot;&apos;]{20,200}</str>
+        </lst>
+      </fragmenter>
+      <formatter
+        name="html"
+        class="solr.highlight.HtmlFormatter"
+        default="true"
+      >
+        <lst name="defaults">
+          <str name="hl.simple.pre"><![CDATA[<em>]]></str>
+          <str name="hl.simple.post"><![CDATA[</em>]]></str>
+        </lst>
+      </formatter>
+    </highlighting>
+  </searchComponent>
+
+  <!-- Query Response Writer -->
+  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
+    <str name="content-type">text/plain; charset=UTF-8</str>
+  </queryResponseWriter>
+
+  <!-- Update Log -->
+  <updateLog>
+    <str name="dir">${solr.ulog.dir:}</str>
+  </updateLog>
+
+  <!-- Auto Commit -->
+  <autoCommit>
+    <maxTime>15000</maxTime>
+    <maxDocs>10000</maxDocs>
+  </autoCommit>
+
+  <!-- Auto Soft Commit -->
+  <autoSoftCommit>
+    <maxTime>1000</maxTime>
+  </autoSoftCommit>
+
+  <!-- Commit Within -->
+  <commitWithin>
+    <softCommit>false</softCommit>
+  </commitWithin>
+</config>

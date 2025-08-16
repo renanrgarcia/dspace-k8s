@@ -1,125 +1,86 @@
-# DSpace 9 Backend Dockerfile - Downloads and builds DSpace from official source
-# Multi-stage build for production-ready DSpace backend
+FROM eclipse-temurin:17-jdk-jammy
 
-# =============================================================================
-# STAGE 1: Builder - Downloads, configures and builds DSpace
-# =============================================================================
-FROM eclipse-temurin:17-jdk-jammy AS builder
-
-# Install build dependencies
+# Install required packages
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    git \
+    maven \
     ant \
     postgresql-client \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Maven 3.9.x
-ARG MAVEN_VERSION=3.9.9
-RUN wget https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -P /tmp \
-    && tar xf /tmp/apache-maven-*.tar.gz -C /opt \
-    && ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven \
-    && rm /tmp/apache-maven-*.tar.gz
-
-# Set environment variables
-ENV MAVEN_HOME=/opt/maven
-ENV PATH="$MAVEN_HOME/bin:$PATH"
-ENV JAVA_HOME=/opt/java/openjdk
-ENV MAVEN_OPTS="-Xmx3g -Xms1g -XX:MaxMetaspaceSize=512m"
-
-# Build arguments for configuration
-ARG DSPACE_VERSION=dspace-9.1
-ARG POSTGRES_HOST=dspace-postgres
-ARG POSTGRES_DB=dspace
-ARG POSTGRES_USER=dspace
-ARG POSTGRES_PASSWORD=dspace
-ARG SOLR_HOST=dspace-solr
-ARG SOLR_PORT=8983
-ARG ADMIN_EMAIL=admin@dspace.org
-ARG ADMIN_PASSWORD=admin
-
-# Create directories and user
-RUN useradd -m -s /bin/bash dspace
-RUN mkdir -p /dspace-source /dspace && chown -R dspace:dspace /dspace-source /dspace
-
-# Copy DSpace source from local directory
-WORKDIR /dspace-source
-COPY --chown=dspace:dspace ./dspace-source/ ./
-
-# Switch to dspace user for build
-USER dspace
-
-# Build DSpace (skip tests for faster builds)
-RUN mvn --no-transfer-progress clean package -P-test-environment -Denforcer.skip=true -Dcheckstyle.skip=true -DskipTests=true
-
-# Install DSpace
-RUN cd /dspace-source/dspace/target/dspace-installer \
-    && ant fresh_install
-
-# =============================================================================
-# STAGE 2: Runtime - Lightweight runtime environment
-# =============================================================================
-FROM eclipse-temurin:17-jre-jammy AS runtime
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
     curl \
-    wget \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-# Create dspace user and directories
-RUN useradd -m -s /bin/bash dspace \
-    && mkdir -p /dspace/log \
-    && chown -R dspace:dspace /dspace
+# Install Tomcat 10
+RUN apt-get update && apt-get install -y \
+    tomcat10 \
+    && rm -rf /var/lib/apt/lists/* || \
+    (apt-get update && apt-get install -y \
+    tomcat9 \
+    && rm -rf /var/lib/apt/lists/*)
 
-# Copy DSpace installation from builder stage
-COPY --from=builder --chown=dspace:dspace /dspace /dspace
+# Ensure Tomcat configuration is properly set up
+RUN if [ -d "/usr/share/tomcat10" ]; then \
+        ln -sf /var/lib/tomcat10/conf /usr/share/tomcat10/conf; \
+        ln -sf /var/lib/tomcat10/logs /usr/share/tomcat10/logs; \
+        ln -sf /var/lib/tomcat10/work /usr/share/tomcat10/work; \
+        ln -sf /var/lib/tomcat10/temp /usr/share/tomcat10/temp; \
+    elif [ -d "/usr/share/tomcat9" ]; then \
+        ln -sf /var/lib/tomcat9/conf /usr/share/tomcat9/conf; \
+        ln -sf /var/lib/tomcat9/logs /usr/share/tomcat9/logs; \
+        ln -sf /var/lib/tomcat9/work /usr/share/tomcat9/work; \
+        ln -sf /var/lib/tomcat9/temp /usr/share/tomcat9/temp; \
+    fi
 
-# Copy configuration template
-COPY --chown=dspace:dspace ./docker/dspace-backend/local.cfg.template /dspace/config/local.cfg
+# Set working directory
+WORKDIR /dspace-source
 
-# Set runtime environment variables
-ENV JAVA_OPTS="-Xmx2g -Xms1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
-ENV SPRING_PROFILES_ACTIVE="docker"
-ENV DSPACE_INSTALL_DIR="/dspace"
+# Copy DSpace source code
+COPY . .
 
-# Runtime arguments that can be overridden
-ARG POSTGRES_HOST=dspace-postgres
-ARG POSTGRES_DB=dspace
-ARG POSTGRES_USER=dspace
-ARG POSTGRES_PASSWORD=dspace
-ARG SOLR_HOST=dspace-solr
-ARG SOLR_PORT=8983
-ARG ADMIN_EMAIL=admin@dspace.org
-ARG ADMIN_PASSWORD=admin
+# Build DSpace with proper module order
+RUN export MAVEN_OPTS="-Xmx1g -Xms512m" && \
+    cd dspace && \
+    mvn clean package -DskipTests -Dcheckstyle.skip=true -Denforcer.skip=true -Dmaven.javadoc.skip=true -Dxml.skip=true -T 1C -P dspace-server-webapp -pl :server -am
 
-# Set environment variables for runtime
-ENV POSTGRES_HOST=${POSTGRES_HOST}
-ENV POSTGRES_DB=${POSTGRES_DB}
-ENV POSTGRES_USER=${POSTGRES_USER}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-ENV SOLR_HOST=${SOLR_HOST}
-ENV SOLR_PORT=${SOLR_PORT}
-ENV ADMIN_EMAIL=${ADMIN_EMAIL}
-ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
+# Check what was built and extract DSpace WAR
+RUN mkdir -p /dspace/app && \
+    echo "=== Checking build output ===" && \
+    find . -name "*.war" -type f && \
+    echo "=== Target directories ===" && \
+    find . -name "target" -type d && \
+    echo "=== DSpace directory structure ===" && \
+    ls -la dspace/ && \
+    echo "=== DSpace modules ===" && \
+    ls -la dspace/modules/ && \
+    echo "=== Server module target ===" && \
+    ls -la dspace/modules/server/target/ && \
+    echo "=== Copying and extracting WAR file ===" && \
+    cp dspace/modules/server/target/*.war /dspace/app/dspace.war && \
+    cd /dspace/app && \
+    jar -xf dspace.war
 
-# Switch to dspace user
-USER dspace
-WORKDIR /dspace
+# Create startup script
+RUN echo '#!/bin/bash\n\
+echo "Waiting for PostgreSQL..."\n\
+while ! nc -z dspace-db 5432; do sleep 2; done\n\
+echo "Waiting for Solr..."\n\
+while ! nc -z dspace-solr 8983; do sleep 2; done\n\
+echo "Starting DSpace Spring Boot application..."\n\
+cd /dspace/app\n\
+echo "Building classpath..."\n\
+CLASSPATH="WEB-INF/classes"\n\
+for jar in WEB-INF/lib/*.jar; do\n\
+    CLASSPATH="$CLASSPATH:$jar"\n\
+done\n\
+echo "Classpath: $CLASSPATH"\n\
+echo "Main class: org.dspace.app.ServerApplication"\n\
+java -cp "$CLASSPATH" org.dspace.app.ServerApplication --server.port=8080\n\
+' > /startup.sh && chmod +x /startup.sh
+
+# Set working directory to DSpace app
+WORKDIR /dspace/app
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
-    CMD curl -f http://localhost:8080/server/actuator/health || exit 1
-
-# Copy and set up the init script
-COPY --chown=dspace:dspace ./docker/dspace-backend/init.sh /dspace/init.sh
-RUN chmod +x /dspace/init.sh
-
-# Use the init script as the entry point
-CMD ["/dspace/init.sh"]
+# Start DSpace
+CMD ["/startup.sh"]

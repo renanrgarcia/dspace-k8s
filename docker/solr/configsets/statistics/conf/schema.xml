@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema name="dspace-statistics" version="1.6">
+  <!-- DSpace Statistics Schema -->
+
+  <!-- Field Type Definitions -->
+  <fieldType
+    name="string"
+    class="solr.StrField"
+    sortMissingLast="true"
+    docValues="true"
+  />
+  <fieldType
+    name="boolean"
+    class="solr.BoolField"
+    sortMissingLast="true"
+    docValues="true"
+  />
+  <fieldType
+    name="int"
+    class="solr.TrieIntField"
+    precisionStep="0"
+    positionIncrementGap="0"
+    docValues="true"
+  />
+  <fieldType
+    name="long"
+    class="solr.TrieLongField"
+    precisionStep="0"
+    positionIncrementGap="0"
+    docValues="true"
+  />
+  <fieldType
+    name="float"
+    class="solr.TrieFloatField"
+    precisionStep="0"
+    positionIncrementGap="0"
+    docValues="true"
+  />
+  <fieldType
+    name="double"
+    class="solr.TrieDoubleField"
+    precisionStep="0"
+    positionIncrementGap="0"
+    docValues="true"
+  />
+  <fieldType
+    name="date"
+    class="solr.TrieDateField"
+    precisionStep="0"
+    positionIncrementGap="0"
+    docValues="true"
+  />
+
+  <!-- Text Field Types -->
+  <fieldType
+    name="text_general"
+    class="solr.TextField"
+    positionIncrementGap="100"
+  >
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter
+        class="solr.StopFilterFactory"
+        ignoreCase="true"
+        words="stopwords.txt"
+        enablePositionIncrements="true"
+      />
+      <filter class="solr.LowerCaseFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter
+        class="solr.StopFilterFactory"
+        ignoreCase="true"
+        words="stopwords.txt"
+        enablePositionIncrements="true"
+      />
+      <filter class="solr.LowerCaseFilterFactory" />
+    </analyzer>
+  </fieldType>
+
+  <!-- Field Definitions -->
+  <!-- Core Statistics Fields -->
+  <field
+    name="id"
+    type="string"
+    indexed="true"
+    stored="true"
+    required="true"
+    multiValued="false"
+  />
+  <field
+    name="time"
+    type="date"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="ip"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="user_agent"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="referrer"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="dspace_object"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="type"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- User Information -->
+  <field
+    name="user_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="user_email"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="user_name"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Session Information -->
+  <field
+    name="session_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="country"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="city"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Action Information -->
+  <field
+    name="action"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="target"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="target_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Collection and Community Information -->
+  <field
+    name="collection_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="collection_name"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="community_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="community_name"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Item Information -->
+  <field
+    name="item_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="item_title"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="item_handle"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Bitstream Information -->
+  <field
+    name="bitstream_id"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="bitstream_name"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="bitstream_format"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="bitstream_size"
+    type="long"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Search Information -->
+  <field
+    name="search_query"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="search_filters"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <field
+    name="search_results"
+    type="int"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Download Information -->
+  <field
+    name="download_size"
+    type="long"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+  <field
+    name="download_time"
+    type="long"
+    indexed="true"
+    stored="true"
+    multiValued="false"
+  />
+
+  <!-- Text Field for General Search -->
+  <field
+    name="text"
+    type="text_general"
+    indexed="true"
+    stored="false"
+    multiValued="true"
+  />
+
+  <!-- Copy Fields for Search -->
+  <copyField source="user_name" dest="text" />
+  <copyField source="collection_name" dest="text" />
+  <copyField source="community_name" dest="text" />
+  <copyField source="item_title" dest="text" />
+  <copyField source="bitstream_name" dest="text" />
+  <copyField source="search_query" dest="text" />
+  <copyField source="search_filters" dest="text" />
+
+  <!-- Dynamic Fields -->
+  <dynamicField
+    name="*_txt"
+    type="text_general"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_str"
+    type="string"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_int"
+    type="int"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_long"
+    type="long"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_float"
+    type="float"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_double"
+    type="double"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_date"
+    type="date"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+  <dynamicField
+    name="*_bool"
+    type="boolean"
+    indexed="true"
+    stored="true"
+    multiValued="true"
+  />
+
+  <!-- Unique Key -->
+  <uniqueKey>id</uniqueKey>
+
+  <!-- Similarity -->
+  <similarity class="org.apache.lucene.search.similarities.BM25Similarity" />
+</schema>
