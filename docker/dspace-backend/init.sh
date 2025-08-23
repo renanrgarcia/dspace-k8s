@@ -21,13 +21,19 @@ wait_for_service() {
         sleep 2
         attempt=$((attempt + 1))
     done
-    echo "❌ $service_name not ready after $max_attempts attempts"
-    exit 1
-}
 
-# Wait for dependencies
-wait_for_service "PostgreSQL" "$POSTGRES_HOST" "5432"
-wait_for_service "Solr" "$SOLR_HOST" "$SOLR_PORT"
+# Wait for Solr to be ready
+echo "Waiting for Solr..."
+while ! nc -z dspace-solr 8983; do
+  sleep 2
+done
+
+echo "Starting DSpace backend..."
+
+# Configure CORS for frontend communication
+export DSPACE_CORS_ALLOWED_ORIGINS="http://localhost:4000,http://dspace-frontend:4000"
+export DSPACE_CORS_ALLOWED_METHODS="GET,POST,PUT,DELETE,OPTIONS"
+export DSPACE_CORS_ALLOWED_HEADERS="*"
 
 # One-time database initialization (if needed)
 if [ ! -f /dspace/.db_initialized ]; then

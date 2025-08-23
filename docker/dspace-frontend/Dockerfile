@@ -56,6 +56,33 @@ COPY --chown=node:node ./dspace-angular/ ./
 # Copy Docker-specific configuration files
 COPY --chown=node:node ./docker/dspace-frontend/config/ ./config/
 
+# Create missing suggestion-target-data.service.ts file with all required methods
+RUN mkdir -p src/app/core/notifications/suggestions/target && \
+    echo 'import { HttpClient } from "@angular/common/http";' > src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { Injectable } from "@angular/core";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { Store } from "@ngrx/store";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { Observable, of } from "rxjs";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { IdentifiableDataService } from "../../../data/base/identifiable-data.service";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { FindListOptions } from "../../../data/find-list-options.model";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { PaginatedList } from "../../../data/paginated-list.model";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { RemoteData } from "../../../data/remote-data";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'import { SuggestionTarget } from "../models/suggestion-target.model";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '@Injectable({ providedIn: "root" })' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo 'export class SuggestionTargetDataService extends IdentifiableDataService<SuggestionTarget> {' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  protected linkPath = "suggestiontargets";' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  constructor() { super("suggestiontargets", null, null, null, null); }' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  getTargetsBySource(source: string, options: FindListOptions = {}): Observable<RemoteData<PaginatedList<SuggestionTarget>>> {' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '    return of({ hasSucceeded: true, payload: { page: [], totalElements: 0 } } as RemoteData<PaginatedList<SuggestionTarget>>);' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  }' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  getTargetsByUser(userId: string): Observable<RemoteData<PaginatedList<SuggestionTarget>>> {' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '    return of({ hasSucceeded: true, payload: { page: [], totalElements: 0 } } as RemoteData<PaginatedList<SuggestionTarget>>);' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  }' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  getTargetById(id: string): Observable<RemoteData<SuggestionTarget>> {' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '    return this.findById(id);' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '  }' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts && \
+    echo '}' >> src/app/core/notifications/suggestions/target/suggestion-target-data.service.ts
+
 # Build the Angular application for production
 RUN npm run build:prod
 

@@ -1,6 +1,6 @@
-# DSpace 9 Docker Backend
+# DSpace 9 Complete Docker Setup
 
-A containerized DSpace 9 backend environment using Docker and Docker Compose, designed for easy setup and frontend integration.
+A fully containerized DSpace 9 environment with both backend and frontend using Docker and Docker Compose, following DSpace 9.x documentation requirements.
 
 ## Prerequisites
 
@@ -10,54 +10,77 @@ A containerized DSpace 9 backend environment using Docker and Docker Compose, de
 - **System Requirements**:
   - 8GB+ RAM (DSpace is memory-intensive)
   - 20GB+ free disk space
+  - Ports 4000, 8080, 5432, 8983 available
 
 ## Quick Start
 
-### 1. Clone DSpace Source Code
+### Option 1: Automated Setup (Recommended)
 
-The DSpace source code needs to be placed in the `dspace-source` directory:
+Use the provided startup script for a complete automated setup:
 
 ```bash
-# Clone DSpace 9.0 source
-git clone -b dspace-9.0 https://github.com/DSpace/DSpace.git dspace-source
+# Make the script executable (Linux/Mac)
+chmod +x start-dspace.sh
+
+# Run the automated setup
+./start-dspace.sh
 ```
 
-### 2. Environment Configuration
+### Option 2: Manual Setup
 
-Copy the example environment file and customize if needed:
+#### 1. Clone Required Repositories
 
 ```bash
+# Clone DSpace 9.0 backend source
+git clone -b dspace-9.0 https://github.com/DSpace/DSpace.git dspace-source
+
+# Clone DSpace Angular 9.1 frontend
+git clone -b dspace-9.1 https://github.com/DSpace/dspace-angular.git dspace-angular
+```
+
+#### 2. Environment Configuration
+
+```bash
+# Copy and customize environment variables
 cp .env.example .env
 ```
 
-Default configuration should work for local development. Key variables:
-
-- `DSPACE_PORT=8080` - Backend API port
-- `POSTGRES_PORT=5432` - Database port
-- `SOLR_PORT=8983` - Search engine port
-- `ADMIN_EMAIL=admin@dspace.org` - Default admin email
-- `ADMIN_PASSWORD=admin` - Default admin password
-
-### 3. Start the Backend
-
-Build and start all services:
+#### 3. Start All Services
 
 ```bash
-# Start all services (database, solr, dspace backend)
-docker-compose up -d
+# Start database and Solr first
+docker-compose up -d dspace-db dspace-solr
 
-# View logs
-docker-compose logs -f dspace-backend
+# Wait 30 seconds, then start backend
+docker-compose up -d dspace-backend
+
+# Wait for backend to be healthy, then start frontend
+docker-compose up -d dspace-frontend
 ```
 
-First startup will take 10-15 minutes as it:
+First startup will take 15-20 minutes as it:
 
-- Downloads dependencies
-- Builds DSpace from source
+- Downloads and builds DSpace from source
+- Builds Angular frontend
 - Initializes the database
 - Configures Solr cores
+- Creates admin user
 
-### 4. Verify Installation
+## Access Points
+
+Once all services are running:
+
+- **🌐 DSpace Frontend**: http://localhost:4000
+- **🔧 Backend REST API**: http://localhost:8080/server/api
+- **🔍 Solr Admin**: http://localhost:8983
+- **🗄️ PostgreSQL**: localhost:5432 (user: dspace, password: dspace)
+
+### Default Admin Account
+
+- **Email**: admin@dspace.org
+- **Password**: admin
+
+## Verification
 
 Check that all services are running:
 
@@ -65,15 +88,14 @@ Check that all services are running:
 # Check service status
 docker-compose ps
 
-# Test REST API
+# Test backend API
 curl http://localhost:8080/server/api
 
-# Access Solr admin (optional)
-# Open http://localhost:8983 in browser
+# Test frontend (should return HTML)
+curl http://localhost:4000
 ```
 
 Expected API response:
-
 ```json
 {
   "dspaceApi": {
@@ -86,13 +108,14 @@ Expected API response:
 
 ### Services
 
-- **dspace-db** (PostgreSQL 17): Main database
-- **dspace-solr** (Solr 9.8): Search and discovery engine
-- **dspace-backend-builder**: Builds DSpace from source (runs once)
-- **dspace-backend**: Runs the DSpace REST API server
+- **dspace-db** (PostgreSQL 17): Main database with pgcrypto extension
+- **dspace-solr** (Solr 9.8): Search and discovery engine with custom cores
+- **dspace-backend**: DSpace REST API server (Spring Boot)
+- **dspace-frontend**: Angular frontend application with SSR
 
 ### Ports
 
+- `4000`: DSpace Angular Frontend
 - `8080`: DSpace REST API
 - `5432`: PostgreSQL database
 - `8983`: Solr admin interface
@@ -101,18 +124,20 @@ Expected API response:
 
 - `postgres_data`: Database persistence
 - `solr_data`: Search index persistence
-- `maven_cache`: Maven dependencies cache
-- `./dspace-install`: DSpace installation directory
-- `./dspace-source`: DSpace source code
+- `dspace_install`: DSpace installation directory
+- `dspace_logs`: DSpace application logs
+- `./dspace-source`: DSpace backend source code (mounted for development)
+- `./dspace-angular`: Angular frontend source code (mounted for development)
 
 ## Frontend Integration
 
-### CORS Configuration
+### Backend-Frontend Communication
 
-The backend is configured to allow CORS requests from frontend applications. Default allowed origins include:
+The setup ensures proper communication between backend and frontend:
 
-- `http://localhost:4200` (Angular dev server)
-- `http://localhost:3000` (React/Next.js dev server)
+- **CORS**: Backend configured to allow requests from `http://localhost:4000`
+- **Service Discovery**: Frontend connects to backend via Docker network (`dspace-backend:8080`)
+- **Health Checks**: Services wait for dependencies to be healthy before starting
 
 ### API Endpoints
 

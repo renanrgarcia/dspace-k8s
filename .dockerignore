@@ -1,0 +1,73 @@
+# Node.js dependencies and build artifacts
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+**/dist/
+**/build/
+**/.angular/
+**/.next/
+**/.nuxt/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Cache directories
+.npm
+.cache
+.parcel-cache
+.eslintcache
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (except main README)
+*.md
+!README.md
+
+# Test files
+**/e2e/
+**/cypress/
+**/*.spec.ts
+**/karma.conf.js
+**/protractor.conf.js
+
+# Environment files - keep base files, exclude only local overrides
+**/src/environments/environment.local.ts
+**/src/environments/environment.production.local.ts
+
+# DSpace source build artifacts (keep source but exclude builds)
+dspace-source/target/
+dspace-source/**/target/
+dspace-source/.mvn/
+dspace-source/mvnw
+dspace-source/mvnw.cmd
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
